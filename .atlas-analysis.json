@@ -1,0 +1,67 @@
+{
+  "projectType": "general",
+  "projectName": "CDLI MCP Server",
+  "projectDescription": "A Model Context Protocol (MCP) server that exposes CDLI (Cuneiform Digital Library Initiative) data as structured tools for AI agents via stdio transport.",
+  "theme": "palm",
+  "primaryColor": "#7c7c7c",
+  "lightColor": "#070707",
+  "darkColor": "#d3d3d3",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": ["introduction", "quickstart"]
+          },
+          {
+            "group": "Setup & Configuration",
+            "pages": ["setup/installation", "setup/claude-desktop", "setup/mcp-inspector"]
+          },
+          {
+            "group": "Development",
+            "pages": ["development/project-structure", "development/adding-tools", "development/testing"]
+          }
+        ]
+      },
+      {
+        "tab": "Tools Reference",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": ["tools/overview"]
+          },
+          {
+            "group": "Artifact Tools",
+            "pages": ["tools/get-artifact", "tools/search-artifacts"]
+          },
+          {
+            "group": "Reference Data Tools",
+            "pages": ["tools/get-authors", "tools/get-publications", "tools/get-provenience"]
+          },
+          {
+            "group": "Utility Tools",
+            "pages": ["tools/ping"]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Connects AI agents to the CDLI (Cuneiform Digital Library Initiative) public API",
+    "Exposes 6 structured MCP tools for searching and retrieving cuneiform artifact data",
+    "Uses stdio transport for compatibility with Claude Desktop and other MCP clients",
+    "Supports full-text artifact search across the CDLI catalog",
+    "Retrieves complete artifact metadata including ATF transliteration text",
+    "Provides access to CDLI authors, publications, and archaeological proveniences"
+  ],
+  "publicApiSurface": [
+    "get_artifact(id: string) — Fetch full metadata for a CDLI artifact by ID",
+    "search_artifacts(query: string) — Full-text search across CDLI artifact catalog",
+    "get_authors() — List CDLI authors (up to 20)",
+    "get_publications(limit?: number) — List CDLI publications",
+    "get_provenience(limit?: number) — List archaeological find sites",
+    "ping() — Liveness check"
+  ]
+}
