@@ -6,7 +6,7 @@ description: "Fetch full metadata and ATF transliteration for a CDLI artifact by
 Fetches the complete metadata record for a specific CDLI artifact by its ID. The response includes publications, materials, period, provenience, collections, and the full ATF inscription/transliteration text.
 
 <Note>
-  Inscription and transliteration data is embedded directly in the response under the `inscription.atf` field. There is no separate inscription tool — everything is returned by `get_artifact`.
+  Inscription and transliteration data is embedded directly in the response under the `inscription.atf` field. The source repository includes an unregistered `get_inscription` tool that targets a dedicated inscription endpoint, but it is not exposed by default. All transliteration data is available through `get_artifact` alone.
 </Note>
 
 ## Parameters

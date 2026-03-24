@@ -53,3 +53,7 @@ No exceptions are thrown to the client — errors are always surfaced as `isErro
 | `get_publications` | `limit` (optional) | `GET /publications.json` |
 | `get_provenience` | `limit` (optional) | `GET /proveniences.json` |
 | `ping` | none | _(no external call)_ |
+
+<Note>
+  The source repository also contains a `get_inscription` tool module (`src/tools/get-inscription/`) that fetches inscription text via `GET /artifacts/{id}/inscription`. It is **not registered** in the barrel file and is therefore not exposed to MCP clients by default. See [Adding tools](/development/adding-tools) if you want to enable it.
+</Note>
