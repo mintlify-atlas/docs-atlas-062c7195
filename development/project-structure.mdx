@@ -1,0 +1,213 @@
+---
+title: "Project structure"
+description: "Understand how the CDLI MCP Server codebase is organized."
+---
+
+The CDLI MCP Server is a TypeScript project with a flat, convention-driven layout. Every tool lives in its own folder under `src/tools/`, and the server entry point wires everything together automatically.
+
+## Directory tree
+
+```
+cdli-mcp-server/
+├── src/
+│   ├── index.ts              # MCP server entry point
+│   └── tools/
+│       ├── index.ts          # Barrel export of all tools
+│       ├── get-artifact/
+│       │   └── index.ts      # Fetch a single artifact by ID
+│       ├── get-authors/
+│       │   └── index.ts      # List CDLI authors
+│       ├── search-artifacts/
+│       │   └── index.ts      # Full-text artifact search
+│       ├── get-publications/
+│       │   └── index.ts      # List publications
+│       ├── get-provenience/
+│       │   └── index.ts      # List proveniences (find sites)
+│       └── ping/
+│           └── index.ts      # Liveness check
+├── build/                    # Compiled JS output (git-ignored)
+├── package.json
+└── tsconfig.json
+```
+
+## File and directory reference
+
+### `src/index.ts` — server entry point
+
+Initializes the MCP `Server` instance, registers two request handlers (`ListToolsRequestSchema` and `CallToolRequestSchema`), and connects the stdio transport. This file does not define any tools directly — it delegates entirely to the `tools` array exported from `src/tools/index.ts`.
+
+```typescript src/index.ts
+import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import {
+    CallToolRequestSchema,
+    ListToolsRequestSchema,
+} from "@modelcontextprotocol/sdk/types.js";
+import { tools } from "./tools/index.js";
+
+// 1. Initialize Server
+const server = new Server(
+    { name: "cdli-mcp-prototype", version: "1.0.0" },
+    { capabilities: { tools: {} } }
+);
+
+// 2. Expose Tools
+server.setRequestHandler(ListToolsRequestSchema, async () => {
+    return {
+        tools: tools.map((tool) => ({
+            name: tool.name,
+            description: tool.description,
+            inputSchema: tool.inputSchema,
+        })),
+    };
+});
+
+// 3. Handle Tool Execution
+server.setRequestHandler(CallToolRequestSchema, async (request) => {
+    const toolName = request.params.name;
+    const args = request.params.arguments || {};
+
+    const tool = tools.find((t) => t.name === toolName);
+    if (!tool) throw new Error(`Unknown tool: ${toolName}`);
+
+    return await tool.handler(args);
+});
+
+// 4. Connect Transport
+async function run() {
+    const transport = new StdioServerTransport();
+    await server.connect(transport);
+}
+
+run().catch((error) => {
+    process.stderr.write(`Fatal error running MCP server: ${error.message}\n`);
+    process.exit(1);
+});
+```
+
+### `src/tools/index.ts` — barrel export
+
+Imports every tool module using namespace imports and collects them into a single `tools` array. The server iterates this array to register and dispatch tools. To add a new tool, you only need to add one import and one entry here.
+
+```typescript src/tools/index.ts
+import * as getArtifact from './get-artifact/index.js';
+import * as getAuthors from './get-authors/index.js';
+import * as searchArtifacts from './search-artifacts/index.js';
+import * as ping from './ping/index.js';
+import * as getPublications from './get-publications/index.js';
+import * as getProvenience from './get-provenience/index.js';
+
+export const tools = [
+    getArtifact,
+    getAuthors,
+    searchArtifacts,
+    ping,
+    getPublications,
+    getProvenience,
+];
+```
+
+### `src/tools/<tool-name>/index.ts` — individual tool definitions
+
+Each tool is a TypeScript module that exports exactly four named values. The server reads these exports directly — there is no class, interface, or decorator involved.
+
+| Export | Type | Purpose |
+|---|---|---|
+| `name` | `string` | The MCP tool identifier, in `snake_case` |
+| `description` | `string` | Human-readable description shown to the AI client |
+| `inputSchema` | JSON Schema object | Describes accepted arguments |
+| `handler` | `async function` | Executes the tool and returns a `content` array |
+
+Here is a complete example from `get-artifact`:
+
+```typescript src/tools/get-artifact/index.ts
+export const name = "get_artifact";
+
+export const description =
+    "Get full metadata for a specific CDLI artifact by ID, including its "
+    + "publications, materials, period, provenience, collections, and the "
+    + "full ATF inscription/transliteration text.";
+
+export const inputSchema = {
+    type: "object",
+    properties: {
+        id: { type: "string", description: "The ID of the artifact (e.g. P315278)" }
+    },
+    required: ["id"]
+};
+
+export const handler = async (args: { id: string }) => {
+    const numericId = args.id.replace(/^[A-Za-z]+/, "");
+    const response = await fetch(`https://cdli.earth/artifacts/${numericId}.json`, {
+        headers: { Accept: "application/json", "User-Agent": "cdli-mcp-prototype/1.0.0" }
+    });
+    if (!response.ok) {
+        return {
+            content: [{ type: "text", text: `Artifact ${numericId} not found.` }],
+            isError: true,
+        };
+    }
+    const artifact = await response.json();
+    return {
+        content: [{ type: "text", text: JSON.stringify(artifact, null, 2) }]
+    };
+};
+```
+
+### `build/` — compiled output
+
+Generated by `tsc` and git-ignored. The server is always run from this directory (`node build/index.js`), not from `src/`. You must rebuild after every source change.
+
+### `package.json` — dependencies and scripts
+
+The project has one runtime dependency and two build scripts:
+
+```json package.json
+{
+  "scripts": {
+    "build": "tsc",
+    "start": "node build/index.js",
+    "dev":   "tsc && node build/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.0.0"
+  }
+}
+```
+
+<Note>
+  `npm run dev` builds and immediately runs the server. Do not use it as the
+  MCP Inspector command — the build output on stdout corrupts the JSON-RPC
+  stream. See [Testing](/development/testing) for details.
+</Note>
+
+### `tsconfig.json` — TypeScript configuration
+
+Targets ES2022 with `NodeNext` module resolution. The `outDir` is `./build` and the `rootDir` is `./src`.
+
+```json tsconfig.json
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "outDir": "./build",
+    "rootDir": "./src",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["src/**/*"]
+}
+```
+
+<Tip>
+  Because `module` is set to `NodeNext`, all local imports in source files must
+  use the `.js` extension (e.g. `'./tools/index.js'`), even though the source
+  files are `.ts`. This is a TypeScript + ESM requirement.
+</Tip>

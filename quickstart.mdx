@@ -1,80 +1,167 @@
 ---
 title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+description: "Build and connect the CDLI MCP Server in under 5 minutes."
 ---
 
-## Get started in three steps
+The CDLI MCP Server connects any MCP-compatible client (such as Claude Desktop) to the [Cuneiform Digital Library Initiative](https://cdli.mpiwg-berlin.mpg.de/) public API. It uses `stdio` transport and exposes six tools for searching artifacts, retrieving metadata, and more.
 
-Get your documentation site running locally and make your first customization.
+## Prerequisites
 
-### Step 1: Set up your local environment
+- [Node.js](https://nodejs.org/) v18 or higher
+- npm
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+## Build the server
 
-### Step 2: Deploy your changes
+<Steps>
+  <Step title="Clone the repository">
+    ```bash
+    git clone <your-repo-url>
+    cd cdli-mcp-server
+    ```
+  </Step>
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+  <Step title="Install dependencies">
+    ```bash
+    npm install
+    ```
+  </Step>
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+  <Step title="Build the TypeScript source">
+    ```bash
+    npm run build
+    ```
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+    This compiles the TypeScript source into `build/index.js`. You must re-run this command after every source change.
 
-### Step 3: Go live
+    <Note>
+      `npm run dev` compiles and immediately runs the server — useful during development, but not suitable for use with MCP Inspector or Claude Desktop (see below).
+    </Note>
+  </Step>
+</Steps>
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+## Connect to Claude Desktop
 
-## Next steps
+<Steps>
+  <Step title="Locate the Claude Desktop config file">
+    <CodeGroup>
 
-Now that you have your docs running, explore these key features:
+    ```text macOS
+    ~/Library/Application Support/Claude/claude_desktop_config.json
+    ```
 
-<CardGroup cols={2}>
+    ```text Windows
+    %APPDATA%\Claude\claude_desktop_config.json
+    ```
 
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
+    ```text Linux
+    ~/.config/Claude/claude_desktop_config.json
+    ```
 
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
+    </CodeGroup>
+  </Step>
 
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
+  <Step title="Add the CDLI server entry">
+    Open the config file and add the `cdli` entry under `mcpServers`. Replace the path with the absolute path to `build/index.js` on your machine.
 
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
+    ```json claude_desktop_config.json
+    {
+      "mcpServers": {
+        "cdli": {
+          "command": "node",
+          "args": ["/absolute/path/to/cdli-mcp-server/build/index.js"]
+        }
+      }
+    }
+    ```
 
-</CardGroup>
+    <Warning>
+      Use an **absolute path**. Relative paths will cause Claude Desktop to fail silently when launching the server.
+    </Warning>
+  </Step>
+
+  <Step title="Restart Claude Desktop">
+    Quit and reopen Claude Desktop. The CDLI tools will appear in your conversation and Claude can invoke them automatically based on your prompts.
+
+    Try asking: *"Search CDLI for tablets from the Ur III period"* or *"Get the full metadata for artifact P315278"*.
+  </Step>
+</Steps>
+
+## Test with MCP Inspector
+
+The [MCP Inspector](https://github.com/modelcontextprotocol/inspector) provides a browser UI for listing and calling tools interactively — useful for verifying the server before connecting it to a client.
+
+<Steps>
+  <Step title="Build the server">
+    ```bash
+    npm run build
+    ```
+  </Step>
+
+  <Step title="Launch the inspector">
+    ```bash
+    npx @modelcontextprotocol/inspector node build/index.js
+    ```
+
+    <Warning>
+      Do **not** pass `npm run dev` as the inspector command. The `dev` script writes build output to stdout, which corrupts the JSON-RPC stream and causes `SyntaxError: Unexpected token '>'` errors.
+    </Warning>
+
+    <Tip>
+      To skip the auth token prompt during local development, set `DANGEROUSLY_OMIT_AUTH=true`:
+
+      ```bash
+      DANGEROUSLY_OMIT_AUTH=true npx @modelcontextprotocol/inspector node build/index.js
+      ```
+
+      Then open `http://localhost:6274` without any token query parameter.
+    </Tip>
+  </Step>
+
+  <Step title="Open the inspector URL">
+    The inspector prints a URL including an auth token:
+
+    ```
+    MCP Inspector is up and running at:
+    http://localhost:6274/?MCP_PROXY_AUTH_TOKEN=<your-token>
+    ```
+
+    Copy and paste the **full URL** (including the token) into your browser. On WSL or Linux, the browser will not open automatically.
+  </Step>
+
+  <Step title="Connect to the server">
+    In the inspector UI:
+
+    1. Set **Transport** to `STDIO`
+    2. Set **Command** to `node`
+    3. Set **Args** to `build/index.js`
+    4. Click **Connect**
+
+    You can now list all tools and call them using the form interface.
+  </Step>
+</Steps>
+
+## Test with raw JSON-RPC
+
+Because the server uses stdio transport, you can pipe JSON-RPC messages directly without any client setup.
+
+**List all available tools:**
+
+```bash
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | node build/index.js
+```
+
+**Fetch a single artifact by ID:**
+
+```bash
+echo '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"get_artifact","arguments":{"id":"P315278"}}}' | node build/index.js
+```
+
+**Search artifacts by keyword:**
+
+```bash
+echo '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"search_artifacts","arguments":{"query":"Ur III tablet"}}}' | node build/index.js
+```
 
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+  The server targets the live CDLI API at `https://cdli.earth`. These commands require an active internet connection.
 </Note>

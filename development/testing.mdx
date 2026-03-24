@@ -1,0 +1,117 @@
+---
+title: "Testing"
+description: "Test the CDLI MCP Server using raw JSON-RPC or the MCP Inspector."
+---
+
+The server uses the `stdio` transport, which makes it easy to test without a running client. You can pipe raw JSON-RPC messages directly from your terminal, or use the browser-based MCP Inspector for an interactive experience.
+
+<Note>
+  Always run `npm run build` before testing. The server runs from compiled
+  JavaScript in `build/`, not from `src/`.
+</Note>
+
+## Option 1: Raw JSON-RPC via stdin
+
+Because the server reads from stdin and writes to stdout, you can test any method by piping a JSON-RPC message with `echo`.
+
+### List all available tools
+
+```bash
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | node build/index.js
+```
+
+This returns the full list of registered tools with their names, descriptions, and input schemas.
+
+### Call `get_artifact`
+
+```bash
+echo '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"get_artifact","arguments":{"id":"P315278"}}}' | node build/index.js
+```
+
+Fetches the full metadata record for artifact `P315278`, including its ATF inscription text.
+
+### Call `search_artifacts`
+
+```bash
+echo '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"search_artifacts","arguments":{"query":"Ur III tablet"}}}' | node build/index.js
+```
+
+Runs a full-text search across the CDLI artifact catalog and returns up to 10 results.
+
+### More example calls
+
+<CodeGroup>
+
+```bash ping
+echo '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"ping","arguments":{}}}' | node build/index.js
+```
+
+```bash get_authors
+echo '{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"get_authors","arguments":{}}}' | node build/index.js
+```
+
+```bash get_publications
+echo '{"jsonrpc":"2.0","id":6,"method":"tools/call","params":{"name":"get_publications","arguments":{"limit":5}}}' | node build/index.js
+```
+
+```bash get_provenience
+echo '{"jsonrpc":"2.0","id":7,"method":"tools/call","params":{"name":"get_provenience","arguments":{"limit":5}}}' | node build/index.js
+```
+
+</CodeGroup>
+
+## Option 2: MCP Inspector
+
+The MCP Inspector provides a browser UI for listing tools and calling them with a form-based interface. It is the recommended approach for exploratory testing.
+
+See the [MCP Inspector setup guide](/setup/mcp-inspector) for full instructions on launching the inspector and connecting it to the server.
+
+<Warning>
+  Do not use `npm run dev` as the inspector command. The `dev` script prints
+  build output to stdout, which corrupts the JSON-RPC stream and causes
+  `SyntaxError: Unexpected token '>'` errors. Always build first with
+  `npm run build`, then launch the inspector separately.
+</Warning>
+
+## Development workflow
+
+The typical edit-build-test cycle is:
+
+<Steps>
+  <Step title="Edit source files">
+    Make changes to any file under `src/`.
+  </Step>
+
+  <Step title="Rebuild">
+    ```bash
+    npm run build
+    ```
+
+    This compiles TypeScript to `build/`. The `dev` script (`tsc && node build/index.js`) does the same but immediately runs the server afterward — use it when you want to verify the server starts without errors.
+  </Step>
+
+  <Step title="Test">
+    Pipe a JSON-RPC message to confirm your changes work as expected:
+
+    ```bash
+    echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | node build/index.js
+    ```
+
+    Or launch the inspector for interactive testing:
+
+    ```bash
+    npx @modelcontextprotocol/inspector node build/index.js
+    ```
+  </Step>
+</Steps>
+
+<Tip>
+  For local development without authentication on the inspector, set
+  `DANGEROUSLY_OMIT_AUTH=true` to skip the token prompt:
+
+  ```bash
+  DANGEROUSLY_OMIT_AUTH=true npx @modelcontextprotocol/inspector node build/index.js
+  ```
+
+  Then open `http://localhost:6274` directly.
+</Tip>

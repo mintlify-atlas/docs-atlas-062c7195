@@ -1,0 +1,76 @@
+---
+title: "get_artifact"
+description: "Fetch full metadata and ATF transliteration for a CDLI artifact by ID."
+---
+
+Fetches the complete metadata record for a specific CDLI artifact by its ID. The response includes publications, materials, period, provenience, collections, and the full ATF inscription/transliteration text.
+
+<Note>
+  Inscription and transliteration data is embedded directly in the response under the `inscription.atf` field. There is no separate inscription tool — everything is returned by `get_artifact`.
+</Note>
+
+## Parameters
+
+<ParamField path="id" type="string" required>
+  The CDLI artifact ID. Accepts both prefixed (`P315278`) and numeric-only (`315278`) formats.
+
+  The tool automatically strips any leading letter prefix before making the API request — `"P234524"` and `"234524"` resolve to the same artifact.
+</ParamField>
+
+## API endpoint
+
+```
+GET https://cdli.earth/artifacts/{id}.json
+```
+
+The `{id}` segment always uses the numeric form after prefix normalization.
+
+## Example
+
+### JSON-RPC call
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "get_artifact",
+    "arguments": {
+      "id": "P315278"
+    }
+  }
+}
+```
+
+### Via stdin (raw stdio transport)
+
+```bash
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"get_artifact","arguments":{"id":"P315278"}}}' | node build/index.js
+```
+
+## Example prompts
+
+- *"Get the full metadata and inscription text for artifact P315278"*
+- *"Fetch artifact 315278 from CDLI"*
+- *"What is the period and provenience of CDLI artifact P234524?"*
+
+## Error handling
+
+If the artifact is not found or the API returns a non-200 status, the tool returns:
+
+```json
+{
+  "content": [{ "type": "text", "text": "Artifact 315278 not found or API error." }],
+  "isError": true
+}
+```
+
+Network errors return:
+
+```json
+{
+  "content": [{ "type": "text", "text": "Error fetching artifact: <error message>" }],
+  "isError": true
+}
+```

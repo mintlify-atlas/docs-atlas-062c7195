@@ -1,0 +1,55 @@
+---
+title: "Tools overview"
+description: "All MCP tools exposed by the CDLI MCP Server."
+---
+
+The CDLI MCP Server exposes a set of tools that map directly to the [CDLI public API](https://cdli.earth). Each tool communicates with `https://cdli.earth` and returns structured JSON responses.
+
+**Transport:** `stdio` (standard input/output)
+
+## Error handling
+
+All tools return a consistent error shape on failure:
+
+```json
+{
+  "content": [{ "type": "text", "text": "<error message>" }],
+  "isError": true
+}
+```
+
+No exceptions are thrown to the client — errors are always surfaced as `isError: true` with a human-readable message in `content[0].text`.
+
+## Available tools
+
+<CardGroup cols={2}>
+  <Card title="get_artifact" icon="magnifying-glass" href="/tools/get-artifact">
+    Fetch full metadata and ATF transliteration for a CDLI artifact by ID.
+  </Card>
+  <Card title="search_artifacts" icon="search" href="/tools/search-artifacts">
+    Full-text search across the CDLI artifact catalog.
+  </Card>
+  <Card title="get_authors" icon="users" href="/tools/get-authors">
+    List authors registered in the CDLI database.
+  </Card>
+  <Card title="get_publications" icon="book" href="/tools/get-publications">
+    List publications from the CDLI database.
+  </Card>
+  <Card title="get_provenience" icon="map-pin" href="/tools/get-provenience">
+    List archaeological find sites (proveniences) from the CDLI database.
+  </Card>
+  <Card title="ping" icon="signal" href="/tools/ping">
+    Liveness check to verify the CDLI MCP Server is running.
+  </Card>
+</CardGroup>
+
+## Tool summary
+
+| Tool | Parameters | API Endpoint |
+|------|------------|--------------|
+| `get_artifact` | `id` (required) | `GET /artifacts/{id}.json` |
+| `search_artifacts` | `query` (required) | `GET /search.json` |
+| `get_authors` | none | `GET /authors.json?limit=20` |
+| `get_publications` | `limit` (optional) | `GET /publications.json` |
+| `get_provenience` | `limit` (optional) | `GET /proveniences.json` |
+| `ping` | none | _(no external call)_ |

@@ -1,0 +1,90 @@
+---
+title: "Installation"
+description: "Install and build the CDLI MCP Server from source."
+---
+
+The CDLI MCP Server is a [Model Context Protocol](https://modelcontextprotocol.io/) server written in TypeScript. You build it from source and run it with Node.js. The compiled entry point is `build/index.js`, which MCP clients (such as Claude Desktop) invoke directly.
+
+## Prerequisites
+
+- **Node.js v18 or higher** — [Download from nodejs.org](https://nodejs.org/)
+- **npm** — bundled with Node.js
+
+Verify your versions before proceeding:
+
+```bash
+node --version   # must be v18.0.0 or higher
+npm --version
+```
+
+## Installation steps
+
+<Steps>
+  <Step title="Clone the repository">
+    ```bash
+    git clone <your-repo-url>
+    cd cdli-mcp-server
+    ```
+  </Step>
+
+  <Step title="Install dependencies">
+    ```bash
+    npm install
+    ```
+
+    This installs the runtime dependency (`@modelcontextprotocol/sdk`) and dev dependencies (`typescript`, `@types/node`).
+  </Step>
+
+  <Step title="Build the TypeScript source">
+    ```bash
+    npm run build
+    ```
+
+    This runs the TypeScript compiler (`tsc`) using the project's `tsconfig.json` settings:
+
+    | Setting | Value |
+    |---|---|
+    | `target` | `ES2022` |
+    | `module` | `NodeNext` |
+    | `moduleResolution` | `NodeNext` |
+    | `rootDir` | `./src` |
+    | `outDir` | `./build` |
+    | `strict` | `true` |
+
+    After a successful build, the compiled JavaScript is written to the `build/` directory. The main entry point MCP clients will invoke is **`build/index.js`**.
+  </Step>
+</Steps>
+
+## Project structure after build
+
+```
+cdli-mcp-server/
+├── src/
+│   ├── index.ts              # MCP server entry point
+│   └── tools/
+│       ├── index.ts          # Barrel export of all tools
+│       ├── get-artifact/
+│       ├── get-authors/
+│       ├── search-artifacts/
+│       ├── get-publications/
+│       ├── get-provenience/
+│       └── ping/
+├── build/                    # Compiled JS output (git-ignored)
+│   └── index.js              # ← MCP clients point here
+├── package.json
+└── tsconfig.json
+```
+
+## Development rebuilds
+
+During development, use `npm run dev` to compile and immediately run the server in a single step:
+
+```bash
+npm run dev
+```
+
+<Warning>
+  Do **not** pass `npm run dev` as the command to an MCP client or the MCP Inspector. The `dev` script prints TypeScript compiler output to stdout, which corrupts the JSON-RPC stream. Always point clients at the compiled `build/index.js` directly.
+</Warning>
+
+After editing any source file in `src/`, re-run `npm run build` before restarting your MCP client so it picks up the latest compiled output.

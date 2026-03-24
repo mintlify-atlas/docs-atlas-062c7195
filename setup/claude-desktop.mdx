@@ -1,0 +1,116 @@
+---
+title: "Connect to Claude Desktop"
+description: "Add the CDLI MCP Server to your Claude Desktop configuration."
+---
+
+Claude Desktop supports MCP servers via a JSON configuration file. Once configured, CDLI tools appear automatically in your conversations and Claude can call them on your behalf.
+
+## Prerequisites
+
+- Claude Desktop installed and signed in
+- CDLI MCP Server cloned and built — see [Installation](/setup/installation)
+
+## Configuration steps
+
+<Steps>
+  <Step title="Locate the Claude Desktop config file">
+    The config file location depends on your operating system:
+
+    <Tabs>
+      <Tab title="macOS">
+        ```
+        ~/Library/Application Support/Claude/claude_desktop_config.json
+        ```
+
+        Open it quickly from Terminal:
+
+        ```bash
+        open ~/Library/Application\ Support/Claude/
+        ```
+      </Tab>
+      <Tab title="Windows">
+        ```
+        %APPDATA%\Claude\claude_desktop_config.json
+        ```
+
+        Open it quickly from Run (`Win + R`):
+
+        ```
+        %APPDATA%\Claude
+        ```
+      </Tab>
+      <Tab title="Linux">
+        ```
+        ~/.config/Claude/claude_desktop_config.json
+        ```
+
+        Open it quickly from a terminal:
+
+        ```bash
+        xdg-open ~/.config/Claude/
+        ```
+      </Tab>
+    </Tabs>
+
+    If the file does not exist yet, create it as an empty JSON object (`{}`).
+  </Step>
+
+  <Step title="Add the CDLI server entry">
+    Add the following to your config file, replacing the placeholder path with the **absolute path** to `build/index.js` in your cloned repository:
+
+    ```json
+    {
+      "mcpServers": {
+        "cdli": {
+          "command": "node",
+          "args": ["/PATH/TO/CLONED/REPO/cdli-mcp-server/build/index.js"]
+        }
+      }
+    }
+    ```
+
+    <Warning>
+      Use the **absolute path** to `build/index.js`. Relative paths and `~` shortcuts are not expanded by Claude Desktop and will cause the server to fail to launch.
+    </Warning>
+
+    If your config file already contains an `mcpServers` block, add the `cdli` entry inside the existing object rather than creating a second `mcpServers` key.
+  </Step>
+
+  <Step title="Restart Claude Desktop">
+    Fully quit and reopen Claude Desktop. The application reads the config file at startup — a simple window refresh is not enough.
+  </Step>
+
+  <Step title="Verify the tools are available">
+    Open a new conversation. Click the tools/integrations icon (the hammer or plug icon depending on your version) and confirm that CDLI tools such as `get_artifact`, `search_artifacts`, and `ping` appear in the list.
+
+    You can also verify by typing a prompt that requires a CDLI tool — Claude will invoke the server automatically if it is connected.
+  </Step>
+</Steps>
+
+## Try it out
+
+<Tip>
+  Paste any of these example prompts into Claude Desktop to confirm the integration is working:
+
+  - "Search CDLI for Ur III tablets"
+  - "Get the full metadata and inscription text for artifact P315278"
+  - "List the authors in the CDLI database"
+  - "What proveniences are recorded in CDLI?"
+  - "Ping the CDLI server"
+</Tip>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="CDLI tools do not appear after restart">
+    - Confirm the path in `args` is the absolute path to `build/index.js` and that the file exists.
+    - Run `node /your/path/to/build/index.js` directly in a terminal to check for errors.
+    - Confirm you ran `npm run build` successfully before restarting Claude Desktop.
+  </Accordion>
+  <Accordion title="Claude says it cannot reach the CDLI server">
+    The server connects to the live CDLI API at `https://cdli.earth`. Ensure you have an active internet connection. Corporate firewalls or VPNs may block outbound requests to this host.
+  </Accordion>
+  <Accordion title="JSON syntax error in the config file">
+    The config file must be valid JSON. Use a linter or editor with JSON validation (such as VS Code) to check for missing commas, trailing commas, or mismatched braces before restarting Claude Desktop.
+  </Accordion>
+</AccordionGroup>

@@ -1,0 +1,175 @@
+---
+title: "Adding tools"
+description: "Extend the CDLI MCP Server with new tools that call the CDLI API."
+---
+
+Each tool in the CDLI MCP Server is a self-contained TypeScript module. Adding a new tool takes four steps: create a folder, implement the module, register it in the barrel file, and rebuild.
+
+## The tool interface contract
+
+Every tool module must export exactly four named values:
+
+| Export | Type | Description |
+|---|---|---|
+| `name` | `string` | The MCP tool identifier. Use `snake_case` (e.g. `get_artifact`). |
+| `description` | `string` | Shown to the AI client. Write a clear, specific sentence. |
+| `inputSchema` | JSON Schema object | Describes the arguments the tool accepts. Use JSON Schema draft-07. |
+| `handler` | `async (args) => { content: [...] }` | Executes the tool. Must return a `content` array with at least one `{ type: "text", text: string }` item. |
+
+<Note>
+  The handler return shape matches the MCP `CallToolResult` type. Always return
+  `{ content: [{ type: "text", text: ... }] }`. On error, add `isError: true`
+  alongside `content`.
+</Note>
+
+## Step-by-step: add a `get_periods` tool
+
+The following example adds a tool that fetches historical periods from the CDLI API at `https://cdli.earth/periods.json`.
+
+<Steps>
+  <Step title="Create the tool folder">
+    Create a new directory under `src/tools/` named after your tool. Use kebab-case to match the existing convention.
+
+    ```bash
+    mkdir src/tools/get-periods
+    ```
+  </Step>
+
+  <Step title="Implement the tool module">
+    Create `src/tools/get-periods/index.ts` and export the four required values.
+
+    ```typescript src/tools/get-periods/index.ts
+    export const name = "get_periods";
+
+    export const description =
+        "Get a list of historical periods from the CDLI database. "
+        + "Optionally limit the number of results.";
+
+    export const inputSchema = {
+        type: "object",
+        properties: {
+            limit: {
+                type: "number",
+                description: "Number of periods to return (default: 20)"
+            }
+        },
+        required: []
+    };
+
+    export const handler = async (args: { limit?: number }) => {
+        const limit = args.limit ?? 20;
+        try {
+            const response = await fetch(
+                `https://cdli.earth/periods.json?limit=${limit}`,
+                {
+                    headers: {
+                        Accept: "application/json",
+                        "User-Agent": "cdli-mcp-server/1.0.0"
+                    }
+                }
+            );
+            if (!response.ok) {
+                return {
+                    content: [{
+                        type: "text",
+                        text: `API error fetching periods (status ${response.status}).`
+                    }],
+                    isError: true
+                };
+            }
+            const data = await response.json();
+            return {
+                content: [{ type: "text", text: JSON.stringify(data, null, 2) }]
+            };
+        } catch (e: any) {
+            return {
+                content: [{ type: "text", text: `Error fetching periods: ${e.message}` }],
+                isError: true
+            };
+        }
+    };
+    ```
+
+    <Tip>
+      Follow the same `try/catch` pattern used in existing tools. Any unhandled
+      exception will crash the server process rather than returning a graceful
+      error to the client.
+    </Tip>
+  </Step>
+
+  <Step title="Register the tool in the barrel file">
+    Open `src/tools/index.ts` and add an import and an entry to the `tools` array.
+
+    ```typescript src/tools/index.ts
+    import * as getArtifact from './get-artifact/index.js';
+    import * as getAuthors from './get-authors/index.js';
+    import * as searchArtifacts from './search-artifacts/index.js';
+    import * as ping from './ping/index.js';
+    import * as getPublications from './get-publications/index.js';
+    import * as getProvenience from './get-provenience/index.js';
+    import * as getPeriods from './get-periods/index.js'; // add this
+
+    export const tools = [
+        getArtifact,
+        getAuthors,
+        searchArtifacts,
+        ping,
+        getPublications,
+        getProvenience,
+        getPeriods, // add this
+    ];
+    ```
+
+    <Note>
+      Imports use the `.js` extension even though the source files are `.ts`.
+      This is required by TypeScript's `NodeNext` module resolution.
+    </Note>
+  </Step>
+
+  <Step title="Build and verify">
+    Compile the TypeScript source:
+
+    ```bash
+    npm run build
+    ```
+
+    Then confirm the new tool appears in the tool list:
+
+    ```bash
+    echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | node build/index.js
+    ```
+
+    You should see `get_periods` in the returned `tools` array.
+  </Step>
+</Steps>
+
+## Handler return format
+
+The `handler` function must always return an object with a `content` array. Each item in the array must have a `type` field. The server currently uses `"text"` for all responses.
+
+```typescript
+// Success
+return {
+    content: [{ type: "text", text: JSON.stringify(data, null, 2) }]
+};
+
+// Error
+return {
+    content: [{ type: "text", text: "Something went wrong." }],
+    isError: true
+};
+```
+
+<Warning>
+  Do not `throw` from inside a handler. Throwing propagates to the MCP SDK,
+  which will respond with a JSON-RPC error rather than a normal tool result.
+  Catch all exceptions and return them as `isError: true` content instead.
+</Warning>
+
+## Naming conventions
+
+| Item | Convention | Example |
+|---|---|---|
+| Tool folder | kebab-case | `get-periods` |
+| Tool `name` export | snake_case | `get_periods` |
+| Source file | `index.ts` in tool folder | `src/tools/get-periods/index.ts` |

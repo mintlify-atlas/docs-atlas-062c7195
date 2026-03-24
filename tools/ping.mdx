@@ -1,0 +1,50 @@
+---
+title: "ping"
+description: "Liveness check to verify the CDLI MCP Server is running."
+---
+
+A simple liveness check that confirms the CDLI MCP Server process is running and reachable. Use this to verify a successful server connection before invoking other tools.
+
+<Note>
+  `ping` makes no external API calls. It always returns `pong` immediately and will never return `isError: true`.
+</Note>
+
+## Parameters
+
+This tool takes no parameters.
+
+## Response
+
+```json
+{
+  "content": [{ "type": "text", "text": "pong" }]
+}
+```
+
+## Example
+
+### JSON-RPC call
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "ping",
+    "arguments": {}
+  }
+}
+```
+
+### Via stdin (raw stdio transport)
+
+```bash
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"ping","arguments":{}}}' | node build/index.js
+```
+
+## Example prompts
+
+- *"Ping the CDLI MCP server"*
+- *"Is the CDLI server running?"*
+- *"Check that the MCP server is connected"*

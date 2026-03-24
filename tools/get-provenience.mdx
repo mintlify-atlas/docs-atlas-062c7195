@@ -1,0 +1,82 @@
+---
+title: "get_provenience"
+description: "List archaeological find sites (proveniences) from the CDLI database."
+---
+
+Returns a list of proveniences from the CDLI database. A **provenience** is the archaeological site where a cuneiform tablet or artifact was excavated or is believed to have originated — for example, Nippur, Ur, or Lagash.
+
+## Parameters
+
+<ParamField path="limit" type="number">
+  Number of proveniences to return. Defaults to `20` if not provided.
+</ParamField>
+
+## API endpoint
+
+```
+GET https://cdli.earth/proveniences.json?limit={limit}
+```
+
+## Example
+
+### JSON-RPC call
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "get_provenience",
+    "arguments": {}
+  }
+}
+```
+
+### JSON-RPC call (custom limit)
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "method": "tools/call",
+  "params": {
+    "name": "get_provenience",
+    "arguments": {
+      "limit": 50
+    }
+  }
+}
+```
+
+### Via stdin (raw stdio transport)
+
+```bash
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"get_provenience","arguments":{}}}' | node build/index.js
+```
+
+## Example prompts
+
+- *"What proveniences are recorded in CDLI?"*
+- *"List the archaeological sites in the CDLI database"*
+- *"Show me find sites for cuneiform artifacts"*
+
+## Error handling
+
+If the API returns a non-200 status, the tool returns:
+
+```json
+{
+  "content": [{ "type": "text", "text": "API error fetching proveniences (status 404)." }],
+  "isError": true
+}
+```
+
+Network errors return:
+
+```json
+{
+  "content": [{ "type": "text", "text": "Error fetching proveniences: <error message>" }],
+  "isError": true
+}
+```

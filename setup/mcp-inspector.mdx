@@ -1,0 +1,97 @@
+---
+title: "MCP Inspector"
+description: "Test the CDLI MCP Server interactively using the MCP Inspector browser UI."
+---
+
+The [MCP Inspector](https://github.com/modelcontextprotocol/inspector) is the official browser-based tool for testing MCP servers. It lets you list all available tools and call them with a form interface — without needing Claude Desktop or any other MCP client.
+
+## Prerequisites
+
+- CDLI MCP Server cloned and built — see [Installation](/setup/installation)
+- `npx` available (bundled with npm)
+
+## Testing steps
+
+<Steps>
+  <Step title="Build the server">
+    The Inspector runs the compiled JavaScript directly, so you must build before launching. Re-run this command any time you modify source files:
+
+    ```bash
+    npm run build
+    ```
+  </Step>
+
+  <Step title="Launch the Inspector">
+    Run the Inspector against the compiled entry point:
+
+    ```bash
+    npx @modelcontextprotocol/inspector node build/index.js
+    ```
+
+    <Warning>
+      Do **not** substitute `npm run dev` here. The `dev` script prints TypeScript compiler output to stdout, which corrupts the JSON-RPC stream and causes errors like `SyntaxError: Unexpected token '>'`. Always pass `node build/index.js` — the compiled output — as the server command.
+    </Warning>
+  </Step>
+
+  <Step title="Open the Inspector URL">
+    After startup, the Inspector prints a URL similar to:
+
+    ```
+    MCP Inspector is up and running at:
+    http://localhost:6274/?MCP_PROXY_AUTH_TOKEN=<your-token>
+    ```
+
+    Copy the **full URL**, including the `MCP_PROXY_AUTH_TOKEN` query parameter, and open it in your browser. On WSL or headless Linux the browser will not open automatically — paste the URL manually.
+
+    <Tip>
+      To skip the auth token entirely during local development, set `DANGEROUSLY_OMIT_AUTH=true`:
+
+      ```bash
+      DANGEROUSLY_OMIT_AUTH=true npx @modelcontextprotocol/inspector node build/index.js
+      ```
+
+      Then navigate to `http://localhost:6274` without any token.
+    </Tip>
+  </Step>
+
+  <Step title="Configure the transport in the UI">
+    In the Inspector browser UI, set the connection settings:
+
+    | Field | Value |
+    |---|---|
+    | **Transport** | `STDIO` |
+    | **Command** | `node` |
+    | **Args** | `build/index.js` |
+
+    Then click **Connect**.
+  </Step>
+
+  <Step title="List and call tools">
+    Once connected, the Inspector shows all tools registered by the CDLI MCP Server:
+
+    | Tool | Description |
+    |---|---|
+    | `get_artifact` | Fetch full metadata and ATF inscription for an artifact by ID |
+    | `search_artifacts` | Full-text search across the CDLI artifact catalog |
+    | `get_authors` | List authors registered in the CDLI database |
+    | `get_publications` | List publications from the CDLI database |
+    | `get_provenience` | List archaeological find sites (proveniences) |
+    | `ping` | Liveness check — confirms the server is running |
+
+    Select any tool to expand a form with its input fields, fill in the parameters, and click **Run** to see the response.
+  </Step>
+</Steps>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="SyntaxError: Unexpected token in JSON-RPC stream">
+    You are passing `npm run dev` (or another script that writes to stdout) as the server command. The Inspector expects pure JSON-RPC on stdout. Use `node build/index.js` directly.
+  </Accordion>
+  <Accordion title="Browser opens but shows 'Unauthorized'">
+    You navigated to `http://localhost:6274` without the auth token. Copy the full URL printed in the terminal, including the `?MCP_PROXY_AUTH_TOKEN=...` query string. Alternatively, relaunch with `DANGEROUSLY_OMIT_AUTH=true` for local development.
+  </Accordion>
+  <Accordion title="Inspector connects but shows no tools">
+    Confirm the build succeeded and `build/index.js` exists. Run `node build/index.js` directly in a terminal to check for runtime errors before relaunching the Inspector.
+  </Accordion>
+</AccordionGroup>

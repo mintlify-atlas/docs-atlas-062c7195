@@ -1,0 +1,70 @@
+---
+title: "search_artifacts"
+description: "Full-text search across the CDLI artifact catalog."
+---
+
+Performs a full-text search across the CDLI artifact catalog and returns up to 10 matching results.
+
+## Parameters
+
+<ParamField path="query" type="string" required>
+  The search term or phrase. The query is URL-encoded before being sent to the CDLI API.
+</ParamField>
+
+## API endpoint
+
+```
+GET https://cdli.earth/search.json?query={query}&limit=10
+```
+
+Results are always capped at 10 per call.
+
+## Example
+
+### JSON-RPC call
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "search_artifacts",
+    "arguments": {
+      "query": "Ur III tablet"
+    }
+  }
+}
+```
+
+### Via stdin (raw stdio transport)
+
+```bash
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"search_artifacts","arguments":{"query":"Ur III tablet"}}}' | node build/index.js
+```
+
+## Example prompts
+
+- *"Search CDLI for tablets from the Ur III period"*
+- *"Find CDLI artifacts related to Nippur"*
+- *"Search for cuneiform texts mentioning grain rations"*
+
+## Error handling
+
+If the API returns a non-200 status, the tool returns:
+
+```json
+{
+  "content": [{ "type": "text", "text": "API error searching artifacts." }],
+  "isError": true
+}
+```
+
+Network errors return:
+
+```json
+{
+  "content": [{ "type": "text", "text": "Error searching artifacts: <error message>" }],
+  "isError": true
+}
+```

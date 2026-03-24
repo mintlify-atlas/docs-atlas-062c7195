@@ -1,0 +1,81 @@
+---
+title: "get_publications"
+description: "List publications from the CDLI database."
+---
+
+Returns a list of publications from the CDLI database. The number of results can be controlled with the optional `limit` parameter.
+
+## Parameters
+
+<ParamField path="limit" type="number">
+  Number of publications to return. Defaults to `20` if not provided.
+</ParamField>
+
+## API endpoint
+
+```
+GET https://cdli.earth/publications.json?limit={limit}
+```
+
+## Examples
+
+### JSON-RPC call (default limit)
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "get_publications",
+    "arguments": {}
+  }
+}
+```
+
+### JSON-RPC call (custom limit)
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "method": "tools/call",
+  "params": {
+    "name": "get_publications",
+    "arguments": {
+      "limit": 50
+    }
+  }
+}
+```
+
+### Via stdin (raw stdio transport)
+
+```bash
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"get_publications","arguments":{}}}' | node build/index.js
+```
+
+## Example prompts
+
+- *"List publications from the CDLI database"*
+- *"Show me 50 CDLI publications"*
+
+## Error handling
+
+If the API returns a non-200 status, the tool returns:
+
+```json
+{
+  "content": [{ "type": "text", "text": "API error fetching publications (status 404)." }],
+  "isError": true
+}
+```
+
+Network errors return:
+
+```json
+{
+  "content": [{ "type": "text", "text": "Error fetching publications: <error message>" }],
+  "isError": true
+}
+```

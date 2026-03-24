@@ -1,0 +1,65 @@
+---
+title: "get_authors"
+description: "List authors registered in the CDLI database."
+---
+
+Returns a list of up to 20 authors registered in the CDLI database.
+
+## Parameters
+
+This tool takes no parameters.
+
+## API endpoint
+
+```
+GET https://cdli.earth/authors.json?limit=20
+```
+
+The limit of 20 is fixed and cannot be changed via tool arguments.
+
+## Example
+
+### JSON-RPC call
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "get_authors",
+    "arguments": {}
+  }
+}
+```
+
+### Via stdin (raw stdio transport)
+
+```bash
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"get_authors","arguments":{}}}' | node build/index.js
+```
+
+## Example prompts
+
+- *"List the authors in the CDLI database"*
+- *"Who are the contributors registered in CDLI?"*
+
+## Error handling
+
+If the API returns a non-200 status, the tool returns:
+
+```json
+{
+  "content": [{ "type": "text", "text": "API error fetching authors." }],
+  "isError": true
+}
+```
+
+Network errors return:
+
+```json
+{
+  "content": [{ "type": "text", "text": "Error fetching authors: <error message>" }],
+  "isError": true
+}
+```
